@@ -6,6 +6,7 @@ public class NoticeModel {
 	private int row_num;
 	private int noticeNo;
 	private String loginId;
+	private String noticeCategory;
 	private String noticeTitle;
 	private String noticeContent;
 	private String noticeRegdate;
@@ -102,6 +103,12 @@ public class NoticeModel {
 	}
 	public void setTo_date(String to_date) {
 		this.to_date = to_date;
+	}
+	public String getNoticeCategory() {
+		return noticeCategory;
+	}
+	public void setNoticeCategory(String noticeCategory) {
+		this.noticeCategory = noticeCategory;
 	}	
 	
 }
