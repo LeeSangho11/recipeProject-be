@@ -38,6 +38,7 @@
 		FROM tb_notice n
 			LEFT JOIN tb_userinfo u ON n.loginID = u.loginID
 		<where>
+			n.ntc_ctg = #{category}
 			<if test ="(stitle != null) and (!stitle.equals(''))">
 			    and n.ntc_title  Like CONCAT('%', #{stitle}, '%')
 			</if>
