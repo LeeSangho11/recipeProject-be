@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.recipeProject.study.repository.todo.TodoMapper">
+
+	<select id = "todoList" parameterType="java.util.Map" resultType = "kr.recipeProject.study.vo.todo.TodoModel">
+	SELECT
+  		ntc_no as noticeNo,
+  		ntc_title as noticeTitle,
+  		ntc_ctg as ntcCtg,
+  		DATE_FORMAT(noticeRegdate, '%Y-%m-%d') as noticeRegdate,
+  		loginId,
+  		name
+  		FROM
+  		(
+    		SELECT
+      			n.ntc_no,
+      			n.ntc_title,
+      			n.ntc_ctg,
+      			DATE_FORMAT(n.ntc_regdate, '%Y-%m-%d') as noticeRegdate,
+      			u.loginId,
+      			u.name
+      			FROM tb_notice n
+        		LEFT JOIN tb_userinfo u
+        		ON n.loginID = u.loginID
+        		WHERE n.ntc_ctg = 'TDPIN'
+         		<if test ="(stitle != null) and (!stitle.equals(''))">
+			 		and n.ntc_title  Like CONCAT('%', #{stitle}, '%')
+				</if>
+				<if test ="(ssdate != null) and (!ssdate.equals(''))">
+					 and n.ntc_regdate  <![CDATA[>=]]> STR_TO_DATE(#{ssdate}, '%Y-%m-%d')   
+				</if>			
+				<if test ="(sedate != null) and (!sedate.equals(''))">
+					 and n.ntc_regdate  <![CDATA[<=]]> STR_TO_DATE(#{sedate}, '%Y-%m-%d')   
+				</if>		
+       			 ORDER BY n.ntc_no desc
+    	) A
+    	UNION 
+  	SELECT
+    	ntc_no as noticeNo,
+    	ntc_title as noticeTitle,
+    	ntc_ctg as ntcCtg,
+    	DATE_FORMAT(noticeRegdate, '%Y-%m-%d') as noticeRegdate,
+    	loginId,
+    	name
+    	FROM
+    	(
+     		 SELECT
+      		 	n.ntc_no,
+       			n.ntc_title,
+       			n.ntc_ctg,
+        		DATE_FORMAT(n.ntc_regdate, '%Y-%m-%d') as noticeRegdate,
+        		u.loginId,
+        		u.name
+        		FROM tb_notice n
+          		LEFT JOIN tb_userinfo u
+          		ON n.loginID = u.loginID
+          		WHERE n.ntc_ctg = 'TD'
+           		<if test ="(stitle != null) and (!stitle.equals(''))">
+			 		and n.ntc_title  Like CONCAT('%', #{stitle}, '%')
+				</if>
+				<if test ="(ssdate != null) and (!ssdate.equals(''))">
+			 		and n.ntc_regdate  <![CDATA[>=]]> STR_TO_DATE(#{ssdate}, '%Y-%m-%d')   
+				</if>			
+				<if test ="(sedate != null) and (!sedate.equals(''))">
+			 		and n.ntc_regdate  <![CDATA[<=]]> STR_TO_DATE(#{sedate}, '%Y-%m-%d')   
+				</if>		
+          		ORDER BY n.ntc_no desc
+    	) B
+     	LIMIT #{pageIndex}, #{pageSize}
+	</select>
+	
+	<select id="totCnt" parameterType="java.util.Map"  resultType="int">
+		SELECT COUNT(*)
+		FROM tb_notice n
+			LEFT JOIN tb_userinfo u ON n.loginID = u.loginID
+			WHERE n.ntc_ctg = 'TD'
+		<if test ="(stitle != null) and (!stitle.equals(''))">
+		    and n.ntc_title  Like CONCAT('%', #{stitle}, '%')
+		</if>
+		<if test ="(ssdate != null) and (!ssdate.equals(''))">
+		    and n.ntc_regdate  <![CDATA[>=]]> STR_TO_DATE(#{ssdate}, '%Y-%m-%d')   
+		</if>			
+		<if test ="(sedate != null) and (!sedate.equals(''))">
+		    and n.ntc_regdate  <![CDATA[<=]]> STR_TO_DATE(#{sedate}, '%Y-%m-%d')   
+		</if>		
+	</select>	
+	
+	<insert id = "insertTodo" parameterType="java.util.Map">
+	    <selectKey resultType="string" keyProperty="noticeNo" order="BEFORE">
+            SELECT IFNULL(MAX(ntc_no),0) + 1 FROM tb_notice 
+        </selectKey> 
+		INSERT
+		INTO		tb_notice
+				(
+					ntc_no
+				  , loginID
+				  , ntc_title
+				  , ntc_ctg
+				  , ntc_content
+				  , ntc_regdate
+				  <if test="fileyn eq 'Y'.toString()">
+				  , file_name
+                  , logical_path
+                  , phygical_path
+                  , file_size
+                  , file_ext
+                  </if>
+				)
+		VALUES
+				(
+						#{noticeNo}
+					,	#{loginId}
+					,	#{noticeTitle}
+					,	#{ntcCtg}
+					,	#{noticeContent}
+					,	NOW()
+					<if test="fileyn eq 'Y'.toString()">
+				    , #{fileinfo.file_nm}
+                    , #{fileinfo.vrfile_loc}
+                    , #{fileinfo.file_loc}
+                    , #{fileinfo.file_size}
+                    , #{fileinfo.fileExtension}
+                    </if>
+				)
+	</insert>
+	
+	<update id = "updateTodo" parameterType="java.util.Map">
+		UPDATE tb_notice
+		SET		ntc_title = #{noticeTitle}
+				,	ntc_content = #{noticeContent}
+				, ntc_ctg = #{ntcCtg}
+				,	ntc_regdate = NOW()
+			<if test="fileyn eq 'Y'.toString()">
+				, file_name = #{fileinfo.file_nm}
+                , logical_path = #{fileinfo.vrfile_loc}
+                , phygical_path = #{fileinfo.file_loc}
+                , file_size = #{fileinfo.file_size}
+                , file_ext = #{fileinfo.fileExtension}
+            </if>
+		WHERE	ntc_no = #{noticeNo}
+	</update>
+	
+	<select id = "todoDetail" parameterType="java.util.Map"  resultType = "kr.recipeProject.study.vo.todo.TodoModel">
+		SELECT
+					u.loginID as loginId
+				,	n.ntc_title as noticeTitle
+				,	n.ntc_content as noticeContent
+				,   n.ntc_no as noticeNo
+				,	n.ntc_ctg as ntcCtg
+				,   u.name as name
+				,   n.file_name
+                ,   n.logical_path
+                ,   n.phygical_path
+                ,   n.file_size
+                ,   n.file_ext
+		FROM	tb_notice n
+			LEFT JOIN	tb_userinfo u
+			ON			n.loginID = u.loginID
+		WHERE n.ntc_no = #{noticeNo}
+	</select>
+	
+	<delete id="deleteTodo" parameterType="java.util.Map">
+		DELETE
+		FROM 	tb_notice
+		WHERE 	ntc_no = #{noticeNo}
+	</delete>
+     
+</mapper>
